@@ -1,23 +1,26 @@
-TARGET=test-zidane
+.POSIX:
 
-CFLAGS=-Wall -Wextra -std=c11 -pedantic -g -O2
+include config.mk
 
-ifeq ($(ZIDANE_SINGLE_THREADED), 1)
-CPPFLAGS+=-DZIDANE_SINGLE_THREADED
-else
-CFLAGS+=-pthread
-endif
+TEST = test-zidane
 
-all: $(TARGET)
+SRC = test_zidane.c
+OBJ = $(SRC:.c=.o)
 
-$(TARGET): test_zidane.c zidane.h
-	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $<
+all: $(TEST)
 
-test: test-zidane
-	./$<
+$(TEST): $(OBJ)
+
+$(TEST): $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LDFLAGS)
+
+.c.o:
+	$(CC) -c -o $@ $< $(CPPFLAGS) $(CFLAGS)
+
+test: $(TEST)
+	./$(TEST)
 
 clean:
-	rm -f $(TARGET)
-	rm -f test_zidane.o
+	rm -f $(TEST) $(OBJ)
 
 .PHONY: all test clean
