@@ -11,6 +11,8 @@
 #define ZIDANE_IMPLEMENTATION
 #include "zidane.h"
 
+#include "test_zidane_sleep.h"
+
 ZIDANE_TEST(sanity)
 {
 	ZIDANE_VERIFY(2 + 2 == 4);

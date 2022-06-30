@@ -6,8 +6,11 @@ TEST = test-zidane
 
 SRC = test_zidane.c
 OBJ = $(SRC:.c=.o)
+INC = test_zidane_sleep.h
 
 all: $(TEST)
+
+$(OBJ): $(INC)
 
 $(TEST): $(OBJ)
 
