@@ -14,13 +14,18 @@
 #include <threads.h>
 #endif
 
-#define ZIDANE_VERIFY(p)                                               \
-	do {                                                           \
-		if (!(p)) {                                            \
-			fprintf(stderr, "%s:%d: verify failed: %s.\n", \
-				__FILE__, __LINE__, #p);               \
-			__zidane_current_test_failed = true;           \
-		}                                                      \
+#define ZIDANE_VERIFY(p)                                                                \
+	do {                                                                            \
+		if (!(p)) {                                                             \
+			__zidane_current_test_failed = true;                            \
+			__zidane_failure_info_array[__zidane_failure_info_array_size] = \
+				(struct failure_info) {                                 \
+					.file = __FILE__,                               \
+					.line = __LINE__,                               \
+					.expression = #p,                               \
+				};                                                      \
+			__zidane_failure_info_array_size += 1;                          \
+		}                                                                       \
 	} while (0)
 
 #define __ZIDANE_TEST_FUNC_NAME(name) __zidane_test_##name
@@ -49,10 +54,18 @@ struct __zidane_test_fn_container {
 	__zidane_test_fn_type f;
 };
 
+struct failure_info {
+	const char *file;
+	unsigned int line;
+	const char *expression;
+};
+
+extern _Thread_local bool __zidane_current_test_failed;
+extern _Thread_local struct failure_info __zidane_failure_info_array[256];
+extern _Thread_local unsigned int __zidane_failure_info_array_size;
+
 extern void zidane_init(void);
 extern void zidane_deinit(void);
-
-static _Thread_local bool __zidane_current_test_failed;
 
 int main(void);
 
@@ -67,7 +80,9 @@ int main(void);
 
 #include <sys/time.h>
 
-static _Thread_local bool __zidane_current_test_failed = false;
+_Thread_local bool __zidane_current_test_failed = false;
+_Thread_local struct failure_info __zidane_failure_info_array[256];
+_Thread_local unsigned int __zidane_failure_info_array_size = 0;
 
 extern struct __zidane_test_fn_container *__start_test_suite_array;
 extern struct __zidane_test_fn_container *__stop_test_suite_array;
@@ -79,11 +94,23 @@ static int __zidane_run_test(void *arg)
 
 	(*ptr)->f();
 
+	flockfile(stderr);
+	flockfile(stdout);
+	for (unsigned int i = 0; i < __zidane_failure_info_array_size; ++i) {
+		fprintf(stderr, "%s:%d: verify failed: %s.\n", __zidane_failure_info_array[i].file,
+			__zidane_failure_info_array[i].line,
+			__zidane_failure_info_array[i].expression);
+	}
+
+	if (__zidane_current_test_failed) {
+		printf("Test case \033[31m`%s`\033[0m failed.\n", (*ptr)->s);
+	}
+	funlockfile(stdout);
+	funlockfile(stderr);
+
 	return __zidane_current_test_failed;
 }
-#endif
 
-#ifndef ZIDANE_SINGLE_THREADED
 static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 				   unsigned int *tests_passed_count)
 {
@@ -102,8 +129,6 @@ static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 		thrd_join((*ptr)->tid, &ret);
 
 		if (ret != 0) {
-			printf("Test case \033[31m`%s`\033[0m failed.\n",
-			       (*ptr)->s);
 			*tests_failed_count += 1;
 		} else {
 			*tests_passed_count += 1;
@@ -119,9 +144,16 @@ static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 		(*ptr)->f();
 
 		if (__zidane_current_test_failed) {
+			for (unsigned int i = 0; i < __zidane_failure_info_array_size; ++i) {
+				fprintf(stderr, "%s:%d: verify failed: %s.\n",
+					__zidane_failure_info_array[i].file,
+					__zidane_failure_info_array[i].line,
+					__zidane_failure_info_array[i].expression);
+			}
+			printf("Test case \033[31m`%s`\033[0m failed.\n", (*ptr)->s);
+
 			__zidane_current_test_failed = false;
-			printf("Test case \033[31m`%s`\033[0m failed.\n",
-			       (*ptr)->s);
+			__zidane_failure_info_array_size = 0;
 			*tests_failed_count += 1;
 		} else {
 			*tests_passed_count += 1;
