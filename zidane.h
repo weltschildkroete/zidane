@@ -87,8 +87,7 @@ static int __zidane_run_test(void *arg)
 static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 				   unsigned int *tests_passed_count)
 {
-	for (struct __zidane_test_fn_container **ptr =
-		     &__start_test_suite_array;
+	for (struct __zidane_test_fn_container **ptr = &__start_test_suite_array;
 	     ptr < &__stop_test_suite_array; ++ptr) {
 		thrd_t tid;
 		thrd_create(&tid, __zidane_run_test, ptr);
@@ -96,8 +95,7 @@ static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 		(*ptr)->tid = tid;
 	}
 
-	for (struct __zidane_test_fn_container **ptr =
-		     &__start_test_suite_array;
+	for (struct __zidane_test_fn_container **ptr = &__start_test_suite_array;
 	     ptr < &__stop_test_suite_array; ++ptr) {
 		int ret;
 
@@ -116,8 +114,7 @@ static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 static void __zidane_run_all_tests(unsigned int *tests_failed_count,
 				   unsigned int *tests_passed_count)
 {
-	for (struct __zidane_test_fn_container **ptr =
-		     &__start_test_suite_array;
+	for (struct __zidane_test_fn_container **ptr = &__start_test_suite_array;
 	     ptr < &__stop_test_suite_array; ++ptr) {
 		(*ptr)->f();
 
@@ -173,10 +170,8 @@ int main(void)
 	printf("%u total\n", tests_failed_count + tests_passed_count);
 
 	if (should_time) {
-		double start_time = (long) start_tv.tv_sec * 1000.0 +
-				    start_tv.tv_usec / 1000.0;
-		double end_time =
-			(long) end_tv.tv_sec * 1000.0 + end_tv.tv_usec / 1000.0;
+		double start_time = (long) start_tv.tv_sec * 1000.0 + start_tv.tv_usec / 1000.0;
+		double end_time = (long) end_tv.tv_sec * 1000.0 + end_tv.tv_usec / 1000.0;
 
 		// In milliseconds
 		double elapsed_time = end_time - start_time;
